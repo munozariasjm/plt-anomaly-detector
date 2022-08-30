@@ -145,12 +145,18 @@ class EnsambleDetector(Detector):
             detecting starting timestamp of the occurrence.
         """       
         anomalies = {}
-        anomalies["shift"] = self.to_t_int(self.level_shift_detector(data))
-        anomalies["jumps"] = self.to_t_int(self.persisent_detector(data))
         try:
-            anomalies["bumps"] = self.to_t_int(self.bump_detector(data))
+            shifts = self.level_shift_detector(data)
+            if len(shifts) > 0:
+                anomalies["shift"] = self.to_t_int(shifts)
+            jumps = self.persisent_detector(data)
+            if len(jumps) > 0:
+                anomalies["jumps"] = self.to_t_int(jumps)
+            bumps = self.bump_detector(data)
+            if len(bumps) > 0:
+                anomalies["bumps"] = self.to_t_int(bumps)
         except Exception as e:
-            print(e)
+            print("Error in detector", e)
             anomalies["bumps"] = []
         return anomalies
 
@@ -167,7 +173,7 @@ class EnsambleDetector(Detector):
         timestamps = data.index.values
         timedelta_threshold = timestamps[1] - timestamps[0]
         for index, timestamp in enumerate(timestamps[1:]):
-            if timestamp - timestamps[index - 1] > 2 * timedelta_threshold:
+            if timestamp - timestamps[index - 1] > 5 * timedelta_threshold:
                 starts.append(str(timestamp))
         return starts
 

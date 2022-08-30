@@ -1,15 +1,14 @@
 from typing import Any
 import pandas as pd
 import itertools
-from pyspark import F
 from tqdm.auto import tqdm
 import numpy as np
 import warnings
 import seaborn as sns
 import matplotlib.pyplot as plt
-from src.data.data_getter import LocalFileExplorer
-from src.model.preprocessor import DifferencePreprocessor
-from src.model.detectors import EnsambleDetector
+from ..data.data_getter import LocalFileExplorer
+from .preprocessor import DifferencePreprocessor
+from .detectors import EnsambleDetector
 import glob
 import os
 import json
@@ -153,6 +152,8 @@ class AnomalySearcher:
         ax[0].set_title("Fill {}".format(fill_number))
         ax[1].set(xlabel="Time", ylabel="Preprocessed diff.")
         if save_path:
+            if not os.path.exists(save_path):
+                os.makedirs(save_path)
             plt.savefig(os.path.join(save_path,
                                      f"fill_{fill_number}.png"))
 
@@ -182,14 +183,15 @@ class AnomalySearcher:
         passes_threshold = values > th
         max_ch = np.max(values)
         other_cols = [c for c in data.columns if c != channel]
-        maxs_others = np.max(data[other_cols].values, axis=0)
-        mean_maxs = np.mean(maxs_others)
-        if any(passes_threshold) and max_ch > 2* mean_maxs:
-            to_search = True
-            logging_dict["WARNING"] = f"Channel {channel} Anomalous"
-        if to_search:
-            anomaly_dict = self.detecting_machine.detect(data[channel])
-            logging_dict["ANOMALIES"] = anomaly_dict
+        if len(other_cols) > 0:
+            maxs_others = np.mean(data[other_cols].values, axis=0)
+            mean_maxs = np.mean(maxs_others)
+            if any(passes_threshold) and max_ch > 2 * mean_maxs:
+                to_search = True
+                logging_dict["WARNING"] = f"Channel {channel} Anomalous"
+            if to_search:
+                anomaly_dict = self.detecting_machine.detect(data[channel])
+                logging_dict["ANOMALIES"] = anomaly_dict
         return logging_dict
 
     def search_anomalies(self, x_processed, threshold=0.1):
@@ -333,7 +335,7 @@ class AnomalySearcher:
             report_df = pd.DataFrame(entire_report)
             report_df.to_pickle(os.path.join(output_path, "report_df.pkl"))
             self.save_output(entire_report,
-                             os.path.join(output_path, "report_json.pkl"))
+                             os.path.join(output_path, "report_json"))
         return entire_report
 
     @classmethod
@@ -370,10 +372,12 @@ class AnomalySearcher:
         already_analyzed = glob.glob(os.path.join(output_path, 
                                                   "single_fill_reports",
                                                   "*.json"))
-        already_analyzed = [int(x.split("/")[-1].replace(".json", "")) for x in already_analyzed]
+        already_analyzed = [x.split("/")[-1].replace(".json", "")
+                            for x in already_analyzed]
         # Iterate over the fills
         if not overwrite:
-            available_fills = [n for n in available_fills if n not in already_analyzed]
+            available_fills = [n for n in available_fills
+                               if n.split("/")[-1] not in already_analyzed]
         it_fills = tqdm(available_fills) if progress_bar else available_fills
         log_info = {}
         for fill in it_fills:
@@ -390,14 +394,17 @@ class AnomalySearcher:
                     if ch_cont:
                         is_anomalous = True
                         break
+                base_path = per_fill_path.split("single_fill_reports")[0]
+                plot_path = os.path.join(base_path,
+                                         "plots")
                 if is_anomalous and make_anomalous_plots:
-                    cls.generate_plots(fill_number,
-                                        prepared_data,
-                                        os.path.join(output_path, "plots"))
+                    searcher.generate_plots(int(fill_number),
+                                       prepared_data,
+                                       plot_path)
                 if not is_anomalous and make_normal_plots:
-                    cls.generate_plots(fill_number,
+                    searcher.generate_plots(int(fill_number),
                                         prepared_data,
-                                        os.path.join(output_path, "plots"))
+                                        plot_path)
                 # Generate the report of all the fills
                 _ = searcher.generate_fills_report(per_fill_path, output_path)
             except Exception as e:

@@ -11,14 +11,26 @@ For now, the implementation is a Proof-of-Concept, and looks forward to be gener
 
 ### Quick start
 
-From a lxplus instance you can run the following command:
+We recommend to use all the commands within a lxplus instance. To beguin, please be in the directory of this repository.
+
+```bash
+cd AnomalyDetection
+```
+
+From here, we should create a new pipenv environment to install the required packages. This can be easily done via the script we prepared:
 
 ```bash
 source setup.sh
 ```
-This will setup the environment and load the python modules. In addition it will help you generate the mount to the BRILDATA.
+Now, we prepared a module to easily mount the data from the PLT-BRIL detector. To do so, we need to run the following command in a python shell:
 
-Otherwise, you can follow the examples in .ipynb
+```python
+from src.data.mounting_tool import MountData
+mounter = MountData(user="YOUR_CMSUSR", password="YOUR_password")
+mounter.create_mount(mount_source="brildev1:/brildata/22/", mount_target="./Files/22")
+```
+This will mount all the files containing fills in 2022 in the directory `./Files/22`. And the data will be unmounted when the lxplus instance is closed.
+
 
 ---
 

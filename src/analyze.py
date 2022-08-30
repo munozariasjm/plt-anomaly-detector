@@ -1,4 +1,4 @@
-from src.model.searcher import AnomalySearcher
+from .model.searcher import AnomalySearcher
 import os
 
 def main():
