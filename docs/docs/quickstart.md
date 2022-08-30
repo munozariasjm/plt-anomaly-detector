@@ -1,14 +1,3 @@
-# Plt Anomaly Detection Tool
-### PLT-BRIL, CMS, CERN
----
-### Description
-
-This repo is a efficient implementation of an anomaly detection algorithm suited for the data coming from the PLT-BRIL detector, is is intended to be robust to experimental noise and not highly tuneable.
-
-For now, the implementation is a Proof-of-Concept, and looks forward to be generalized to other usecases and dockerized.
-
----
-
 ### Quick start
 
 We recommend to use all the commands within a lxplus instance. To beguin, please be in the directory of this repository.
@@ -65,31 +54,15 @@ AnomalySearcher().run_scan(
 Running this function will create a directory `./Results/22` with the following structure:
 
 ```bash
--|Results/22 |
-             |-plots
-                |-FILL_0.png
-                |-FILL_1.png
-                |-FILL_2.png
+./Results/22 |
+             | -plots
+                |  -FILL_0.png
+                |  -FILL_1.png
+                |  -FILL_2.png
                 |   ...
-             |-single_fill_reports
-             |-report_df.pkl
-             |-logs.json
+             | -single_fill_reports
+             | -report_df.pkl
+             |  -logs.json
 ```
 
 The `report_df.pkl` file contains a pandas dataframe with the results of the analysis. The `logs.json` file contains the logs of the analysis. The `plots` directory contains the plots of the anomalous fills. The `single_fill_reports` directory contains the analysis data of the fills, reporting different types of anomalies and their respective timestamps.
-
-To use with more details these endpoints, please refer to the [documentation]().
-
----
-
-### Contributing
-
-All the dependencies are managed via pipenv for reproducibility and ease of use. We lint all the code with flake8 and black and shall use precode to enforce the coding style.
-
-Please add changes to a new branch, and considering test passing, the PR to the master branch.
-
---- 
-
-**Contact**
-
-Contact @munozariasjm for any issues or questions related to the code.
