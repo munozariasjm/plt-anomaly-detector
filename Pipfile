@@ -18,6 +18,7 @@ install = "*"
 rinohtype = "*"
 
 [dev-packages]
+pipenv-setup = {extras = ["black"], version = "*"}
 
 [requires]
 python_version = "3.9"

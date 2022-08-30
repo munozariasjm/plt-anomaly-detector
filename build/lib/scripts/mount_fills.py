@@ -1,3 +1,4 @@
+#!/usr/bin/env
 from src.data.mount_fills import MountData
 import click
 
@@ -22,7 +23,3 @@ import click
 def main(username, password, year, target_dir):
     mounter = MountData(user=username, password=password)
     mounter.mount_fills("brildev1:/brildata/{year}/", target_dir)
-
-
-if __name__ == "main":
-    main()
