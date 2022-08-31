@@ -1,5 +1,9 @@
 # Installation Guide
 
+Here we present the installation guide for the Anomaly Detection Tool.
+
+### Automatic Installation
+
 Provided that you are in a CERN lxplus environment, you can install the package with the following command runned from inside this directory:
 
 ```bash
@@ -27,4 +31,6 @@ Finally, the package is ready to be installed (in order to apply the changes, yo
 ```bash
 pip install .
 ```
+And you are ready to go!
 
+**Happy physics**

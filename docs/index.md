@@ -5,3 +5,7 @@
 For now, the implementation is a Proof-of-Concept, and looks forward to be generalized to other usecases and dockerized.
 
 For a quick installation, please check the [installation instructions]()
+
+
+Further documentation can be found in the [source code](https://github.com/munozariasjm/plt-anomaly-detector).
+If there is any question or problem, please contact [Jose M Munoz](https://munozariasjm.github.io/).
