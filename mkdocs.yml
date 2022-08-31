@@ -4,14 +4,12 @@ site_name: PLT Anomaly Detection Official Documentation
 nav:
   - Home: index.md
   - Introduction: quickstart.md
-  - Install: install.md
+  - Install Guide: install.md
   - API: API.md
-  - Source: source.md
   
 theme:
     name: "readthedocs"
 
-
 plugins:
-  - search
-  - mkdocstrings
+    - search
+    - mkdocstrings

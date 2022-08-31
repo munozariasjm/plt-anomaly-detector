@@ -10,3 +10,6 @@ pip install -r requirements.txt
 
 # Install the package
 pip install .
+
+echo "Done... Anomaly detection is ready to use"
+echo "Please refer to the README file for further instructions"
