@@ -6,6 +6,7 @@ nav:
   - Introduction: quickstart.md
   - Install: install.md
   - API: API.md
+  - Source: source.md
   
 theme:
     name: "readthedocs"
