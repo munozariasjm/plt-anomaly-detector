@@ -66,3 +66,6 @@ Running this function will create a directory `./Results/22` with the following 
 ```
 
 The `report_df.pkl` file contains a pandas dataframe with the results of the analysis. The `logs.json` file contains the logs of the analysis. The `plots` directory contains the plots of the anomalous fills. The `single_fill_reports` directory contains the analysis data of the fills, reporting different types of anomalies and their respective timestamps.
+
+Please refer to the [examples](https://github.com/munozariasjm/plt-anomaly-detector/tree/main/examples) to see more examples of how to use the code.
+

@@ -1,11 +1,21 @@
 # Plt Anomaly Detection Tool
 ### PLT-BRIL, CMS, CERN
+
+
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity)
+
+[![Linux](https://svgshare.com/i/Zhy.svg)](https://svgshare.com/i/Zhy.svg)
+
+[![Documentation Status](https://readthedocs.org/projects/ansicolortags/badge/?version=latest)](https://munozariasjm.github.io/plt-anomaly-detector/)
+
 ---
 ### Description
 
 This repo is a efficient implementation of an anomaly detection algorithm suited for the data coming from the PLT-BRIL detector, is is intended to be robust to experimental noise and not highly tuneable.
 
 For now, the implementation is a Proof-of-Concept, and looks forward to be generalized to other usecases and dockerized.
+
+Please visit the [documentation](https://munozariasjm.github.io/plt-anomaly-detector/) for more information.
 
 ---
 

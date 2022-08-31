@@ -34,3 +34,8 @@ pip install .
 And you are ready to go!
 
 **Happy physics**
+
+---
+Further details can be found in the [source code](https://github.com/munozariasjm/plt-anomaly-detector).
+
+If there is any question or problem, please contact [Jose M Munoz](https://munozariasjm.github.io/).
