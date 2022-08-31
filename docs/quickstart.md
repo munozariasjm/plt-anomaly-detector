@@ -30,7 +30,7 @@ searcher = AnomalySearcher(MOUNT_TARGET)
 
 # Fill to analyze:
 FILL_NUMBER = 1
-result = anm_searcher(FILL_N,
+result = searcher(FILL_N,
                       return_preprocessed=True,
                       generate_plots=True,
                       save_path = "./Results/22",
