@@ -8,19 +8,9 @@ nav:
   - API: API.md
   
 theme:
-    name: material
+    name: "readthedocs"
 
 
 plugins:
   - search
   - mkdocstrings
-  - pdf-export:
-      verbose: True
-      media_type: print
-      combined: True
-      combined_output_path: pdf/combined.pdf
-      enabled_if_env: ENABLE_PDF_EXPORT
-  - minify:
-      minify_html: true
-  - git-revision-date-localized:
-      type: datetime
