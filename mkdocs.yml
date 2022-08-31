@@ -1,0 +1,26 @@
+# Site name
+site_name: PLT Anomaly Detection Official Documentation
+
+nav:
+  - Home: index.md
+  - Introduction: quickstart.md
+  - Install: install.md
+  - API: API.md
+  
+theme:
+    name: material
+
+
+plugins:
+  - search
+  - mkdocstrings
+  - pdf-export:
+      verbose: True
+      media_type: print
+      combined: True
+      combined_output_path: pdf/combined.pdf
+      enabled_if_env: ENABLE_PDF_EXPORT
+  - minify:
+      minify_html: true
+  - git-revision-date-localized:
+      type: datetime
