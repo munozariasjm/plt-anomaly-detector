@@ -50,7 +50,7 @@ from src.model.searcher import AnomalySearcher
 searcher = AnomalySearcher(MOUNT_TARGET)
 
 # Fill to analyze:
-FILL_NUMBER = 1
+FILL_N = 1
 result = searcher(FILL_N,
                       return_preprocessed=True,
                       generate_plots=True,
@@ -58,7 +58,7 @@ result = searcher(FILL_N,
                       )
 
 ```
-This function will return a dictionary with the results of the analysis. The plots will be saved in the directory `./Results/22`. The plots are saved in the following format: `FILL_N.png`. The preprocessed data will be saved in the following format: `./Results/22/single_fill_reports/FILL_NUMBER.pkl`.
+This function will return a dictionary with the results of the analysis. The plots will be saved in the directory `./Results/22`. The plots are saved in the following format: `FILL_N.png`. The preprocessed data will be saved in the following format: `./Results/22/single_fill_reports/FILL_N.pkl`.
 
 The other way of running the algorithm is to run it over all the fills in a given directory:
 
