@@ -144,6 +144,5 @@ class DifferencePreprocessor:
         number_s = len(X)
         step = (dt_max - dt_min) / number_s
         tdelta = [step * i + dt_min for i in range(number_s)]
-        return pd.DataFrame({"index": tdelta, name: X.squeeze().numpy()}).set_index(
-            "index"
-        )
+        return pd.DataFrame({"index": tdelta,
+                             name: X.squeeze().numpy()}).set_index("index")

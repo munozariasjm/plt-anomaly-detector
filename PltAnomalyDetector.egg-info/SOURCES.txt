@@ -4,6 +4,7 @@ setup.py
 PltAnomalyDetector.egg-info/PKG-INFO
 PltAnomalyDetector.egg-info/SOURCES.txt
 PltAnomalyDetector.egg-info/dependency_links.txt
+PltAnomalyDetector.egg-info/requires.txt
 PltAnomalyDetector.egg-info/top_level.txt
 scripts/__init__.py
 scripts/mount_fills.py

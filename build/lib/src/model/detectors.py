@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from adtk.detector import PersistAD, LevelShiftAD
+from adtk.detector import (PersistAD, LevelShiftAD)
 from abc import ABC, abstractmethod
 import torch
 from typing import Tuple
@@ -17,8 +17,10 @@ class Detector(ABC):
 
 
 class AutoGaussianSlider(torch.nn.Module):
-    def __init__(self, slider_perc: float = 0.05, threshold: float = 0.01) -> None:
-        """Gaussian Slider detector for efficient anomaly detection.
+    def __init__(self,
+                 slider_perc: float = 0.05,
+                 threshold: float = 0.01) -> None:
+        """ Gaussian Slider detector for efficient anomaly detection.
 
         Args:
             slider_perc (float, optional): Size of the window to slide in the
@@ -82,7 +84,6 @@ class AutoGaussianSlider(torch.nn.Module):
 
 class GaussianAnomalyDetector(torch.nn.Module):
     """Wrapper for the Gaussian Anomaly Detector."""
-
     def __init__(self, threshold: float = 0.01) -> None:
         super().__init__()
         self.detection_algorithm = AutoGaussianSlider(threshold=threshold)
@@ -97,7 +98,6 @@ class GaussianAnomalyDetector(torch.nn.Module):
 
 class ExternalDetector(torch.nn.Module):
     """Wrapper for the external detectors."""
-
     def __init__(self, detector: Detector, **kwargs):
         """Wrapper for the external detectors.
 
@@ -113,7 +113,9 @@ class ExternalDetector(torch.nn.Module):
         a_tt = self._anomalies_to_arrays(data.values, anomalies)
         return data.iloc[a_tt]
 
-    def _anomalies_to_arrays(self, x: np.array, anomalies: pd.Series) -> np.array:
+    def _anomalies_to_arrays(self,
+                             x: np.array,
+                             anomalies: pd.Series) -> np.array:
         a_tt = np.arange(len(x))[(~anomalies.isna() & anomalies > 0)]
         return a_tt
 
@@ -125,25 +127,23 @@ class EnsambleDetector(Detector):
         """
         super().__init__(**kwargs)
         self.level_shift_detector = ExternalDetector(
-            detector=LevelShiftAD(c=10.0, side="both", window=5)
-        )
+            detector=LevelShiftAD(c=10.0, side='both', window=5))
         self.persisent_detector = ExternalDetector(
-            detector=PersistAD(c=10.0, side="positive")
-        )
+            detector=PersistAD(c=10.0, side='positive'))
         self.bump_detector = GaussianAnomalyDetector()
 
     def detect(self, data: pd.Series) -> dict:
         """Detects anomalies in the data
-
+        
         Args:
             data (pd.Series): Data to detect anomalies. Must contain index as
             timestamps.
-
+        
         Returns:
             dict: Dictionary with the anomalies detected by each detector
             with characteristic anomaly type, for each one the values are the
             detecting starting timestamp of the occurrence.
-        """
+        """       
         anomalies = {}
         try:
             shifts = self.level_shift_detector(data)
@@ -176,3 +176,4 @@ class EnsambleDetector(Detector):
             if timestamp - timestamps[index - 1] > 5 * timedelta_threshold:
                 starts.append(str(timestamp))
         return starts
+
