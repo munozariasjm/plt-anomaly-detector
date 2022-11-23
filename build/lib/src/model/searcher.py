@@ -7,11 +7,13 @@ import warnings
 import seaborn as sns
 import matplotlib.pyplot as plt
 from ..data.data_getter import LocalFileExplorer
+from ..data.data_getter import DataParser
 from .preprocessor import DifferencePreprocessor
 from .detectors import EnsambleDetector
 import glob
 import os
 import json
+
 
 class AnomalySearcher:
     def __init__(self, mount_path: str = None):
@@ -23,44 +25,12 @@ class AnomalySearcher:
         """
         if mount_path:
             self.data_getter = LocalFileExplorer(mount_path)
+            self.parser = DataParser(mount_path)
+            if os.path.exists(mount_path):
+                print("Data mount found")
         self.preprocessor = DifferencePreprocessor()
         self.detecting_machine = EnsambleDetector()
         self.combs = list(itertools.combinations(range(16), 2))
-
-    def get_raw_data(self,
-                     fill_number: str,
-                     subsample: int = 1,
-                     verbose: bool = False) -> pd.DataFrame:
-        """Returns the raw data for a given fill number
-
-        Args:
-            fill_number (int | str): Fill number to be searched
-            subsample (int, optional): Sample the integrated data to
-            speed-up anomaly searches. Defaults to 1.
-
-        Returns:
-            pd.DataFrame: The pivoted data per channel to generate
-                for each one of the fills, the index is the timestamp.
-        """
-        available_fills = self.data_getter.get_available_files(fill_number)
-        dfs = []
-        for i in range(len(available_fills)):
-            try:
-                df = self.data_getter.get_single_dataframe(fill_number, i)
-                df = df.pivot_table(
-                    index=["dt"], columns="channelid", values="data"
-                ).dropna()
-                dfs.append(df)
-            except Exception as e:
-                if verbose:
-                    print(f"Problem with fill {fill_number}, {i}")
-                    print(e)
-        if not subsample:
-            subsample = 1
-        complete_df = pd.concat(dfs).sort_index()
-        sample_df = complete_df.iloc[::subsample]
-        int_df = self._resample_and_interpolate(sample_df).sort_index()
-        return int_df
 
     def _resample_and_interpolate(self, data: pd.DataFrame) -> pd.DataFrame:
         """Resamples the dataframe and interpolates the missing values
@@ -101,8 +71,7 @@ class AnomalySearcher:
             list: List of the non-constant channels
         """
         are_constant = [
-            self._is_constant(c, data)
-            for c in data.columns if str(c).isnumeric()
+            self._is_constant(c, data) for c in data.columns if str(c).isnumeric()
         ]
         if exclude:
             return [
@@ -132,19 +101,18 @@ class AnomalySearcher:
         ].mean(axis=1)
         X = self.preprocessor(df, ["m_agg", studied_channel])
         return self.preprocessor.build_dataframe(df, X, name=name)
-    
-    def generate_plots(self,
-                       fill_number: int,
-                       preprocessed: pd.DataFrame,
-                       save_path: int = None):
+
+    def generate_plots(
+        self, fill_number: int, preprocessed: pd.DataFrame, save_path: int = None
+    ):
         """Generates the plots for the fill number
-        
+
         Args:
             fill_number (int): Fill number to be plotted
             preprocessed (pd.DataFrame): Preprocessed data
             save_path (str, optional): Path to save the plots
         """
-        raw_df = self.get_raw_data(fill_number)
+        raw_df = self.parser.get_raw_data(fill_number)
         fig, ax = plt.subplots(2, 1, figsize=(20, 7), sharex=True)
         for ch in range(16):
             sns.lineplot(data=raw_df[ch], ax=ax[0], label=None)
@@ -154,8 +122,7 @@ class AnomalySearcher:
         if save_path:
             if not os.path.exists(save_path):
                 os.makedirs(save_path)
-            plt.savefig(os.path.join(save_path,
-                                     f"fill_{fill_number}.png"))
+            plt.savefig(os.path.join(save_path, f"fill_{fill_number}.png"))
 
     def preprocess_data(self, data: pd.DataFrame) -> pd.DataFrame:
         """Studies the fill in the dataframe
@@ -168,10 +135,7 @@ class AnomalySearcher:
             dfs.append(self.study_shannel(data, channel, name=channel))
         return pd.concat(dfs, axis=1)
 
-    def search_in_channel(self,
-                          channel: int,
-                          data: pd.DataFrame, *,
-                          th=0.01) -> dict:
+    def search_in_channel(self, channel: int, data: pd.DataFrame, *, th=0.01) -> dict:
         """Searches for anomalies in a given channel
         Args:
             channel (int): Channel to be searched
@@ -194,16 +158,15 @@ class AnomalySearcher:
     def search_anomalies(self, x_processed, threshold=0.1):
         report_dict = {}
         for channel in range(16):
-            report_dict[channel] = self.search_in_channel(channel,
-                                                          x_processed,
-                                                          th=threshold)
+            report_dict[channel] = self.search_in_channel(
+                channel, x_processed, th=threshold
+            )
         return report_dict
 
-    def _run_pipeline(self,
-                      fill_number: int,
-                      subsample: int = 5,
-                      return_preprocessed: bool = False):
-        data = self.get_raw_data(fill_number, subsample=subsample)
+    def _run_pipeline(
+        self, fill_number: int, subsample: int = 5, return_preprocessed: bool = False
+    ):
+        data = self.parser.get_raw_data(fill_number, subsample=subsample)
         prepared_data = self.preprocess_data(data)
         anomaly_dict = self.search_anomalies(prepared_data)
         if return_preprocessed:
@@ -233,13 +196,15 @@ class AnomalySearcher:
             json.dump(output_dict, f)
         return output
 
-    def __call__(self, fill_number: int,
-                 save_path: str = None,
-                 subsample: int = 5,
-                 return_preprocessed: bool = False,
-                 verbose: bool = False,
-                 generate_plots: bool = False
-                 ) -> Any:
+    def __call__(
+        self,
+        fill_number: int,
+        save_path: str = None,
+        subsample: int = 5,
+        return_preprocessed: bool = False,
+        verbose: bool = False,
+        generate_plots: bool = False,
+    ) -> Any:
         """Runs the pipeline
 
         Args:
@@ -262,32 +227,36 @@ class AnomalySearcher:
             Any: Output of the pipeline
         """
         if not save_path:
-            warnings.warn("""No save path provided.
-            Output will not be saved.""", DeprecationWarning, stacklevel=2)
+            warnings.warn(
+                """No save path provided.
+            Output will not be saved.""",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        print("Running pipeline...")
         if generate_plots:
             return_preprocessed = True
-        output = self._run_pipeline(fill_number=fill_number,
-                                    subsample=subsample,
-                                    return_preprocessed=return_preprocessed)
+        output = self._run_pipeline(
+            fill_number=fill_number,
+            subsample=subsample,
+            return_preprocessed=return_preprocessed,
+        )
         if save_path:
             if "single_fill_reports" not in save_path:
-                single_output_path = os.path.join(save_path,
-                                                  "single_fill_reports",
-                                                  str(fill_number))
+                single_output_path = os.path.join(
+                    save_path, "single_fill_reports", str(fill_number)
+                )
             elif fill_number not in save_path:
-                single_output_path = os.path.join(save_path,
-                                                  str(fill_number))
+                single_output_path = os.path.join(save_path, str(fill_number))
             else:
                 single_output_path = save_path
             warnings.warn("""Save path does not exist. Creating it.""")
-            if not os.path.exists(single_output_path.replace(f"{fill_number}",
-                                                             "")):
+            if not os.path.exists(single_output_path.replace(f"{fill_number}", "")):
                 os.makedirs(single_output_path.replace(f"{fill_number}", ""))
             self.save_output(output, single_output_path)
             if generate_plots:
                 base_path = single_output_path.split("single_fill_reports")[0]
-                plot_path = os.path.join(base_path,
-                                         "plots")
+                plot_path = os.path.join(base_path, "plots")
                 if not os.path.exists(plot_path):
                     os.makedirs(plot_path)
         if verbose:
@@ -298,10 +267,11 @@ class AnomalySearcher:
                 self.generate_plots(fill_number, preprocessed_data, plot_path)
         return output
 
-    def generate_fills_report(self,
-                              report_paths: str,
-                              output_path: str,
-                              ) -> dict:
+    def generate_fills_report(
+        self,
+        report_paths: str,
+        output_path: str,
+    ) -> dict:
         """Generates a report with all the fills in a given path
 
         Args:
@@ -312,9 +282,7 @@ class AnomalySearcher:
             dict: Report per each one of the channels
         """
         available_fills = glob.glob(report_paths + "/*")
-        entire_report = {"fill_n": [],
-                         "Anomalous_channels": [],
-                         "Normal_channels": []}
+        entire_report = {"fill_n": [], "Anomalous_channels": [], "Normal_channels": []}
         for generated_report in available_fills:
             fill_n = generated_report.split("/")[-1].replace(".json", "")
             entire_report["fill_n"].append(fill_n)
@@ -331,21 +299,21 @@ class AnomalySearcher:
             entire_report["Normal_channels"].append(nomals)
             report_df = pd.DataFrame(entire_report)
             report_df.to_pickle(os.path.join(output_path, "report_df.pkl"))
-            self.save_output(entire_report,
-                             os.path.join(output_path, "report_json"))
+            self.save_output(entire_report, os.path.join(output_path, "report_json"))
         return entire_report
 
     @classmethod
-    def run_scan(cls,
-                 mount_path: str,
-                 output_path: str,
-                 *,
-                 overwrite: bool = False,
-                 make_anomalous_plots: bool = True,
-                 make_normal_plots: bool = False,
-                 verbose: bool = False,
-                 progress_bar: bool = True
-                 ) -> None:
+    def run_scan(
+        cls,
+        mount_path: str,
+        output_path: str,
+        *,
+        overwrite: bool = False,
+        make_anomalous_plots: bool = True,
+        make_normal_plots: bool = False,
+        verbose: bool = False,
+        progress_bar: bool = True,
+    ) -> None:
         """Runs the scan of the anomaly detection pipeline on a given mount path
         (Note that the mount path must be a directory at the brildata machine).
         Each one of the available fill files will be processed.
@@ -360,7 +328,7 @@ class AnomalySearcher:
             As the iteration occurs, the internal `generate_fills_report`
             function is called to generate the report for all the fill files,
             reporting the anomalous channels where anomalies were found.
-            
+
         Keyword Arguments:
             overwrite (bool, optional): A boolean indicating if the fills
             already reported in the output_path should be studied again.
@@ -385,7 +353,7 @@ class AnomalySearcher:
             generated by tqdm will be shown. It is recommended to keep this
             option on to have an estimate of the progress of the
             pipeline and the time to complete.
-        
+
         """
         # Make sure the directories exist
         assert os.path.isdir(mount_path), f"{mount_path} is not a directory"
@@ -396,15 +364,17 @@ class AnomalySearcher:
         # Get the list of fills
         available_fills = glob.glob(mount_path + "/*")
         assert len(available_fills) > 0, "No fills found"
-        already_analyzed = glob.glob(os.path.join(output_path, 
-                                                  "single_fill_reports",
-                                                  "*.json"))
-        already_analyzed = [x.split("/")[-1].replace(".json", "")
-                            for x in already_analyzed]
+        already_analyzed = glob.glob(
+            os.path.join(output_path, "single_fill_reports", "*.json")
+        )
+        already_analyzed = [
+            x.split("/")[-1].replace(".json", "") for x in already_analyzed
+        ]
         # Iterate over the fills
         if not overwrite:
-            available_fills = [n for n in available_fills
-                               if n.split("/")[-1] not in already_analyzed]
+            available_fills = [
+                n for n in available_fills if n.split("/")[-1] not in already_analyzed
+            ]
         it_fills = tqdm(available_fills) if progress_bar else available_fills
         log_info = {}
         for fill in it_fills:
@@ -412,9 +382,9 @@ class AnomalySearcher:
                 if verbose:
                     print(f"Scanning fill {fill}...")
                 fill_number = fill.split("/")[-1]
-                prepared_data, anomaly_dict = searcher(fill_number,
-                                                    output_path,
-                                                    return_preprocessed=True)
+                prepared_data, anomaly_dict = searcher(
+                    fill_number, output_path, return_preprocessed=True
+                )
                 log_info[fill_number] = "Analysis completed"
                 is_anomalous = False
                 for ch_id, ch_cont in anomaly_dict.items():
@@ -422,29 +392,22 @@ class AnomalySearcher:
                         is_anomalous = True
                         break
                 base_path = per_fill_path.split("single_fill_reports")[0]
-                plot_path = os.path.join(base_path,
-                                         "plots")
+                plot_path = os.path.join(base_path, "plots")
                 if is_anomalous and make_anomalous_plots:
-                    searcher.generate_plots(int(fill_number),
-                                       prepared_data,
-                                       plot_path)
+                    searcher.generate_plots(int(fill_number), prepared_data, plot_path)
                 if not is_anomalous and make_normal_plots:
-                    searcher.generate_plots(int(fill_number),
-                                        prepared_data,
-                                        plot_path)
+                    searcher.generate_plots(int(fill_number), prepared_data, plot_path)
                 # Generate the report of all the fills
                 _ = searcher.generate_fills_report(per_fill_path, output_path)
             except Exception as e:
                 if verbose:
                     print(f"Problem with fill {fill_number}")
                     print(e)
-                    print("*"*50)
+                    print("*" * 50)
                 log_info[fill_number] = str(e)
             # Save the log
             fail_path = os.path.join(output_path, "logs.json")
             cls.save_output(log_info, fail_path)
         # Generate the report of all the fills
-        _ = searcher.generate_fills_report(per_fill_path,
-                                           output_path)
+        _ = searcher.generate_fills_report(per_fill_path, output_path)
         return None
-
