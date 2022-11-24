@@ -307,6 +307,7 @@ class AnomalySearcher:
         cls,
         mount_path: str,
         output_path: str,
+        selected_fills: list = None,
         *,
         overwrite: bool = False,
         make_anomalous_plots: bool = True,
@@ -363,6 +364,15 @@ class AnomalySearcher:
         searcher = cls(mount_path=mount_path)
         # Get the list of fills
         available_fills = glob.glob(mount_path + "/*")
+        if selected_fills:
+            assert isinstance(selected_fills, list), "selected_fills must be a list"
+            selected_fills = [str(fill) for fill in selected_fills]
+            available_fills = [
+                fill
+                for fill in available_fills
+                if fill.split("/")[-2] in selected_fills
+            ]
+            print(f"Selected fills: {selected_fills}")
         assert len(available_fills) > 0, "No fills found"
         already_analyzed = glob.glob(
             os.path.join(output_path, "single_fill_reports", "*.json")
