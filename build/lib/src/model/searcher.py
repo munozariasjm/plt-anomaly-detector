@@ -164,14 +164,21 @@ class AnomalySearcher:
         return report_dict
 
     def _run_pipeline(
-        self, fill_number: int, subsample: int = 5, return_preprocessed: bool = False
+        self,
+        fill_number: int,
+        subsample: int = 5,
+        return_original: bool = False,
+        return_preprocessed: bool = False,
     ):
         data = self.parser.get_raw_data(fill_number, subsample=subsample)
         prepared_data = self.preprocess_data(data)
         anomaly_dict = self.search_anomalies(prepared_data)
+        outdict = {"fill_number": fill_number, "anomalies": anomaly_dict}
         if return_preprocessed:
-            return prepared_data, anomaly_dict
-        return anomaly_dict
+            outdict["preprocessed"] = prepared_data
+        if return_original:
+            outdict["original"] = data
+        return outdict
 
     @staticmethod
     def save_output(output, path):
@@ -201,6 +208,7 @@ class AnomalySearcher:
         fill_number: int,
         save_path: str = None,
         subsample: int = 5,
+        return_original: bool = False,
         return_preprocessed: bool = False,
         verbose: bool = False,
         generate_plots: bool = False,
@@ -239,6 +247,7 @@ class AnomalySearcher:
         output = self._run_pipeline(
             fill_number=fill_number,
             subsample=subsample,
+            return_original=return_original,
             return_preprocessed=return_preprocessed,
         )
         if save_path:
@@ -307,6 +316,7 @@ class AnomalySearcher:
         cls,
         mount_path: str,
         output_path: str,
+        selected_fills: list = None,
         *,
         overwrite: bool = False,
         make_anomalous_plots: bool = True,
@@ -363,6 +373,15 @@ class AnomalySearcher:
         searcher = cls(mount_path=mount_path)
         # Get the list of fills
         available_fills = glob.glob(mount_path + "/*")
+        if selected_fills:
+            assert isinstance(selected_fills, list), "selected_fills must be a list"
+            selected_fills = [str(fill) for fill in selected_fills]
+            available_fills = [
+                fill
+                for fill in available_fills
+                if fill.split("/")[-2] in selected_fills
+            ]
+            print(f"Selected fills: {selected_fills}")
         assert len(available_fills) > 0, "No fills found"
         already_analyzed = glob.glob(
             os.path.join(output_path, "single_fill_reports", "*.json")

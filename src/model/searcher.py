@@ -164,14 +164,21 @@ class AnomalySearcher:
         return report_dict
 
     def _run_pipeline(
-        self, fill_number: int, subsample: int = 5, return_preprocessed: bool = False
+        self,
+        fill_number: int,
+        subsample: int = 5,
+        return_original: bool = False,
+        return_preprocessed: bool = False,
     ):
         data = self.parser.get_raw_data(fill_number, subsample=subsample)
         prepared_data = self.preprocess_data(data)
         anomaly_dict = self.search_anomalies(prepared_data)
+        outdict = {"fill_number": fill_number, "anomalies": anomaly_dict}
         if return_preprocessed:
-            return prepared_data, anomaly_dict
-        return anomaly_dict
+            outdict["preprocessed"] = prepared_data
+        if return_original:
+            outdict["original"] = data
+        return outdict
 
     @staticmethod
     def save_output(output, path):
@@ -201,6 +208,7 @@ class AnomalySearcher:
         fill_number: int,
         save_path: str = None,
         subsample: int = 5,
+        return_original: bool = False,
         return_preprocessed: bool = False,
         verbose: bool = False,
         generate_plots: bool = False,
@@ -239,6 +247,7 @@ class AnomalySearcher:
         output = self._run_pipeline(
             fill_number=fill_number,
             subsample=subsample,
+            return_original=return_original,
             return_preprocessed=return_preprocessed,
         )
         if save_path:
@@ -253,7 +262,7 @@ class AnomalySearcher:
             warnings.warn("""Save path does not exist. Creating it.""")
             if not os.path.exists(single_output_path.replace(f"{fill_number}", "")):
                 os.makedirs(single_output_path.replace(f"{fill_number}", ""))
-            self.save_output(output, single_output_path)
+            self.save_output(output["anomalies"], single_output_path)
             if generate_plots:
                 base_path = single_output_path.split("single_fill_reports")[0]
                 plot_path = os.path.join(base_path, "plots")
