@@ -124,14 +124,16 @@ class AnomalySearcher:
                 os.makedirs(save_path)
             plt.savefig(os.path.join(save_path, f"fill_{fill_number}.png"))
 
-    def preprocess_data(self, data: pd.DataFrame) -> pd.DataFrame:
+    def preprocess_data(
+        self, data: pd.DataFrame, selected_channels: list
+    ) -> pd.DataFrame:
         """Studies the fill in the dataframe
 
         Args:
             data (pd.DataFrame): Dataframe with the data
         """
         dfs = []
-        for channel in range(16):
+        for channel in selected_channels:
             dfs.append(self.study_shannel(data, channel, name=channel))
         return pd.concat(dfs, axis=1)
 
@@ -155,9 +157,9 @@ class AnomalySearcher:
                 logging_dict["ANOMALIES"] = anomaly_dict
         return logging_dict
 
-    def search_anomalies(self, x_processed, threshold=0.1):
+    def search_anomalies(self, x_processed, selected_channels, threshold=0.1):
         report_dict = {}
-        for channel in range(16):
+        for channel in selected_channels:
             report_dict[channel] = self.search_in_channel(
                 channel, x_processed, th=threshold
             )
@@ -169,10 +171,17 @@ class AnomalySearcher:
         subsample: int = 5,
         return_original: bool = False,
         return_preprocessed: bool = False,
+        selected_channels: list = None,
     ):
         data = self.parser.get_raw_data(fill_number, subsample=subsample)
-        prepared_data = self.preprocess_data(data)
-        anomaly_dict = self.search_anomalies(prepared_data)
+        if selected_channels is not None:
+            assert all(
+                [ch in data.columns for ch in selected_channels]
+            ), "Invalid channels selected, make sure they are in the dataframe"
+        else:
+            selected_channels = range(16)
+        prepared_data = self.preprocess_data(data, selected_channels)
+        anomaly_dict = self.search_anomalies(prepared_data, selected_channels)
         outdict = {"fill_number": fill_number, "anomalies": anomaly_dict}
         if return_preprocessed:
             outdict["preprocessed"] = prepared_data
@@ -212,6 +221,7 @@ class AnomalySearcher:
         return_preprocessed: bool = False,
         verbose: bool = False,
         generate_plots: bool = False,
+        selected_channels: list = None,
     ) -> Any:
         """Runs the pipeline
 
@@ -230,6 +240,8 @@ class AnomalySearcher:
             generate_plots (bool, optional): If True, generates plots for each
                 one of the channels and with preprocessing data.
                 Defaults to False.
+            selected_channels (list, optional): List of channels to be analized.
+                Defaults to None (study all channels).
 
         Returns:
             Any: Output of the pipeline
@@ -249,6 +261,7 @@ class AnomalySearcher:
             subsample=subsample,
             return_original=return_original,
             return_preprocessed=return_preprocessed,
+            selected_channels=selected_channels,
         )
         if save_path:
             if "single_fill_reports" not in save_path:
@@ -317,6 +330,7 @@ class AnomalySearcher:
         mount_path: str,
         output_path: str,
         selected_fills: list = None,
+        selected_channels: list = None,
         *,
         overwrite: bool = False,
         make_anomalous_plots: bool = True,
@@ -379,7 +393,7 @@ class AnomalySearcher:
             available_fills = [
                 fill
                 for fill in available_fills
-                if fill.split("/")[-2] in selected_fills
+                if any([c in fill for c in selected_fills])
             ]
             print(f"Selected fills: {selected_fills}")
         assert len(available_fills) > 0, "No fills found"
@@ -389,6 +403,7 @@ class AnomalySearcher:
         already_analyzed = [
             x.split("/")[-1].replace(".json", "") for x in already_analyzed
         ]
+        print("Overwrite: ", overwrite)
         # Iterate over the fills
         if not overwrite:
             available_fills = [
@@ -401,12 +416,19 @@ class AnomalySearcher:
                 if verbose:
                     print(f"Scanning fill {fill}...")
                 fill_number = fill.split("/")[-1]
-                prepared_data, anomaly_dict = searcher(
-                    fill_number, output_path, return_preprocessed=True
+                anomaly_dict = searcher(
+                    fill_number,
+                    output_path,
+                    return_original=True,
+                    return_preprocessed=True,
+                    selected_channels=selected_channels,
                 )
+                prepared_data = anomaly_dict["original"]
+                anomaly_data = anomaly_dict["anomalies"]
+                print("Plotting...")
                 log_info[fill_number] = "Analysis completed"
                 is_anomalous = False
-                for ch_id, ch_cont in anomaly_dict.items():
+                for ch_id, ch_cont in anomaly_data.items():
                     if ch_cont:
                         is_anomalous = True
                         break

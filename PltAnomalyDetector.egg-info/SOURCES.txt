@@ -8,6 +8,7 @@ PltAnomalyDetector.egg-info/requires.txt
 PltAnomalyDetector.egg-info/top_level.txt
 scripts/__init__.py
 scripts/mount_fills.py
+scripts/run_scan.py
 src/__init__.py
 src/analyze.py
 src/data/__init__.py
